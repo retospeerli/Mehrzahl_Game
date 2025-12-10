@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Umlaut-Meister - Mehrzahlbildung trainieren</title>
+    <title>Umlaut-Meister Wettkampf - Mehrzahlbildung</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
@@ -15,7 +15,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffd166 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -45,23 +45,23 @@
 <body>
     <!-- Loading Screen -->
     <div id="loading-screen" class="loading">
-        <i class="fas fa-spinner"></i>
-        <p>Lade Umlaut-Meister...</p>
+        <i class="fas fa-trophy"></i>
+        <p>Lade Umlaut-Meister Wettkampf...</p>
     </div>
     
     <!-- Main Game Container -->
     <div id="game-container" style="display: none;">
         <div class="container">
-            <!-- Header -->
+            <!-- Header mit Wettkampf-Design -->
             <header class="header">
                 <div class="logo-section">
                     <div class="logo">
-                        <i class="fas fa-language"></i>
-                        <span>Umlaut-Meister</span>
+                        <i class="fas fa-crown"></i>
+                        <span>Umlaut-Meister WETTKAMPF</span>
                     </div>
                     <div class="level-indicator">
-                        <i class="fas fa-trophy"></i>
-                        <span>Mehrzahlbildung</span>
+                        <i class="fas fa-bolt"></i>
+                        <span>Challenge: 50 Wörter</span>
                     </div>
                 </div>
                 
@@ -76,23 +76,45 @@
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Wörter</span>
-                        <span class="stat-value" id="correct-counter">0/20</span>
+                        <span class="stat-value" id="correct-counter">0/50</span>
                     </div>
                 </div>
             </header>
 
+            <!-- Lebenspunkte und Wettkampf-Bar -->
+            <div class="competition-container">
+                <div class="lives-section">
+                    <div class="lives-title">
+                        <i class="fas fa-heart"></i>
+                        <span>Lebenspunkte</span>
+                    </div>
+                    <div class="hearts" id="hearts">
+                        <i class="fas fa-heart live"></i>
+                        <i class="fas fa-heart live"></i>
+                        <i class="fas fa-heart live"></i>
+                    </div>
+                </div>
+                
+                <div class="streak-bonus-section">
+                    <div class="streak-bonus" id="streak-bonus">
+                        <i class="fas fa-bolt"></i>
+                        <span>+1 Leben bei 5er Serie!</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Bar -->
             <div class="progress-container">
                 <div class="progress-title">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Fortschritt</span>
+                    <i class="fas fa-flag-checkered"></i>
+                    <span>Wettkampf-Fortschritt</span>
                 </div>
                 <div class="word-counter">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
                     <div class="progress-text">
-                        <span id="progress-text">0/20 Wörter richtig</span>
+                        <span id="progress-text">0/50 Wörter - Wettkampf läuft!</span>
                     </div>
                 </div>
             </div>
@@ -102,16 +124,16 @@
                 <!-- Word Display -->
                 <div class="word-display-container">
                     <div class="word-prompt">
-                        <i class="fas fa-question-circle"></i>
-                        <span>Wähle die richtige Mehrzahlform:</span>
+                        <i class="fas fa-fire"></i>
+                        <span>WETTKAMPF: Wähle die richtige Mehrzahl!</span>
                     </div>
                     <div class="singular-word" id="singular-word">
-                        <span id="word-singular">Baum</span>
-                        <div class="word-hint">(Einzahl)</div>
+                        <span id="word-singular">BEREIT?</span>
+                        <div class="word-hint">Einzahl - Achtung auf Umlaute!</div>
                     </div>
-                    <div class="instruction">
-                        <i class="fas fa-mouse-pointer"></i>
-                        Klicke auf die richtige Mehrzahl
+                    <div class="timer-display" id="timer-display">
+                        <i class="fas fa-clock"></i>
+                        <span>Denke schnell!</span>
                     </div>
                 </div>
 
@@ -123,26 +145,26 @@
                 <!-- Feedback Area -->
                 <div class="feedback-area">
                     <div class="feedback-message" id="feedback-message">
-                        Wähle die korrekte Mehrzahlform!
+                        Klicke auf "Wettkampf starten"!
                     </div>
                     <div class="feedback-details" id="feedback-details">
-                        Tipp: Achte auf die Umlaute ä, ö, ü und die Endungen!
+                        Ziel: 50 richtige Mehrzahlformen - Jeder Fehler kostet ein Leben!
                     </div>
                 </div>
 
                 <!-- Control Buttons -->
                 <div class="control-buttons">
                     <button id="start-btn" class="control-btn start-btn">
-                        <i class="fas fa-play"></i>
-                        Spiel starten
+                        <i class="fas fa-play-circle"></i>
+                        Wettkampf starten
                     </button>
                     <button id="hint-btn" class="control-btn hint-btn" disabled>
                         <i class="fas fa-lightbulb"></i>
-                        Regeltipp (-2P)
+                        Tipp (-5P)
                     </button>
                     <button id="skip-btn" class="control-btn skip-btn" disabled>
                         <i class="fas fa-forward"></i>
-                        Überspringen (-5P)
+                        Überspringen (-10P)
                     </button>
                 </div>
             </main>
@@ -151,10 +173,10 @@
             <div class="game-log" id="game-log">
                 <div class="game-log-header">
                     <i class="fas fa-scroll"></i>
-                    <span>Spiel-Log</span>
+                    <span>Wettkampf-Log</span>
                 </div>
                 <div class="game-log-content" id="game-log-content">
-                    Willkommen beim Umlaut-Meister!
+                    Willkommen zum Umlaut-Meister WETTKAMPF! Ziel: 50 von 50!
                 </div>
             </div>
         </div>
@@ -164,21 +186,21 @@
     <div class="modal-overlay" id="end-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <i class="fas fa-award" id="modal-icon"></i>
-                <h2 id="modal-title">Spiel beendet!</h2>
+                <i class="fas fa-trophy" id="modal-icon"></i>
+                <h2 id="modal-title">WETTKAMPF BEENDET!</h2>
             </div>
             
             <div class="result-stats">
                 <div class="result-item">
-                    <span class="result-label">Punktzahl:</span>
+                    <span class="result-label">Finale Punktzahl:</span>
                     <span class="result-value" id="final-score">0</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Richtig:</span>
-                    <span class="result-value" id="final-correct">0/20</span>
+                    <span class="result-label">Richtige Antworten:</span>
+                    <span class="result-value" id="final-correct">0/50</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Falsch:</span>
+                    <span class="result-label">Falsche Antworten:</span>
                     <span class="result-value" id="final-wrong">0</span>
                 </div>
                 <div class="result-item">
@@ -190,20 +212,28 @@
                     <span class="result-value" id="final-streak">0</span>
                 </div>
                 <div class="result-item">
+                    <span class="result-label">Verbleibende Leben:</span>
+                    <span class="result-value" id="final-lives">0</span>
+                </div>
+                <div class="result-item">
                     <span class="result-label">Genauigkeit:</span>
                     <span class="result-value" id="final-accuracy">0%</span>
                 </div>
             </div>
 
-            <div class="rule-summary" id="rule-summary">
-                <h3><i class="fas fa-graduation-cap"></i> Heute gelernt:</h3>
-                <div id="learned-rules">Lade Regeln...</div>
+            <div class="achievement-badges" id="achievement-badges">
+                <h3><i class="fas fa-medal"></i> Errungenschaften:</h3>
+                <div id="badges-list">Wird berechnet...</div>
             </div>
 
             <div class="modal-buttons">
                 <button id="restart-btn" class="modal-btn restart-btn">
                     <i class="fas fa-redo"></i>
-                    Neues Spiel
+                    Neuer Wettkampf
+                </button>
+                <button id="share-btn" class="modal-btn share-btn">
+                    <i class="fas fa-share-alt"></i>
+                    Ergebnis teilen
                 </button>
                 <button id="close-btn" class="modal-btn close-btn">
                     <i class="fas fa-times"></i>
@@ -213,35 +243,67 @@
         </div>
     </div>
 
-    <!-- Audio Elements -->
-    <audio id="correct-sound" preload="none">
+    <!-- Audio Elements - ALLE Effekte -->
+    <audio id="correct-sound" preload="auto">
         <source src="audio/correct.wav" type="audio/wav">
-        <source src="audio/correct.mp3" type="audio/mpeg">
     </audio>
-    <audio id="error-sound" preload="none">
+    <audio id="error-sound" preload="auto">
         <source src="audio/error.wav" type="audio/wav">
-        <source src="audio/error.mp3" type="audio/mpeg">
     </audio>
-    <audio id="levelup-sound" preload="none">
-        <source src="audio/levelup.wav" type="audio/wav">
-        <source src="audio/levelup.mp3" type="audio/mpeg">
+    <audio id="roundlost-sound" preload="auto">
+        <source src="audio/roundlost.wav" type="audio/wav">
+    </audio>
+    <audio id="roundwon-sound" preload="auto">
+        <source src="audio/roundwon.wav" type="audio/wav">
+    </audio>
+    <audio id="gamelost-sound" preload="auto">
+        <source src="audio/gamelost.wav" type="audio/wav">
+    </audio>
+    <audio id="gamewon-sound" preload="auto">
+        <source src="audio/gamewon.wav" type="audio/wav">
+    </audio>
+    <audio id="life-gained-sound" preload="auto">
+        <source src="audio/life.wav" type="audio/wav">
+    </audio>
+    <audio id="streak-bonus-sound" preload="auto">
+        <source src="audio/streak.wav" type="audio/wav">
     </audio>
 
-    <!-- Fallback Audio -->
+    <!-- Fallback Audio für fehlende Dateien -->
     <audio id="fallback-correct" preload="none" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
     <audio id="fallback-error" preload="none" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
     <audio id="fallback-win" preload="none" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+    <audio id="fallback-lose" preload="none" src="https://assets.mixkit.co/sfx/preview/mixkit-losing-drums-2023.mp3"></audio>
 
     <!-- Game Script -->
-    <script src="script.js"></script>
     <script>
         // Initialisierung
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM geladen, verberge Loading Screen...');
+            
             setTimeout(function() {
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('game-container').style.display = 'block';
-            }, 500);
+                const loadingScreen = document.getElementById('loading-screen');
+                const gameContainer = document.getElementById('game-container');
+                
+                if (loadingScreen && gameContainer) {
+                    loadingScreen.style.display = 'none';
+                    gameContainer.style.display = 'block';
+                    console.log('Wettkampf-Container angezeigt');
+                    
+                    // Setze hohe Punktzahl für Wettkampf-Stimmung
+                    document.getElementById('correct-counter').textContent = '0/50';
+                    document.getElementById('progress-text').textContent = '0/50 Wörter - Wettkampf läuft!';
+                }
+            }, 800);
+        });
+        
+        // Fehlerbehandlung
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript-Fehler:', e.message);
         });
     </script>
+    
+    <!-- Main Game Script -->
+    <script src="script.js"></script>
 </body>
 </html>
