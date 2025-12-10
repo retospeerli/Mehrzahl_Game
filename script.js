@@ -237,7 +237,7 @@ const GRAMMAR_RULES = [
     "ß-Regel: Fuß → Füße (nicht Fusse oder Fuise)"
 ];
 
-// Spielzustand (bleibt gleich)
+// Spielzustand
 const GameState = {
     currentWord: null,
     score: 0,
@@ -253,7 +253,7 @@ const GameState = {
     learnedRules: new Set()
 };
 
-// DOM-Elemente (bleibt gleich)
+// DOM-Elemente
 const elements = {
     wordSingular: document.getElementById('word-singular'),
     score: document.getElementById('score'),
@@ -282,7 +282,34 @@ const elements = {
     closeBtn: document.getElementById('close-btn')
 };
 
-// Funktion findGrammarRule anpassen für phonetische Fehler
+// Audio-Elemente
+const audioElements = {
+    correct: document.getElementById('correct-sound'),
+    error: document.getElementById('error-sound'),
+    levelup: document.getElementById('levelup-sound'),
+    fallbackCorrect: document.getElementById('fallback-correct'),
+    fallbackError: document.getElementById('fallback-error'),
+    fallbackWin: document.getElementById('fallback-win')
+};
+
+// ==================== HILFSFUNKTIONEN ====================
+
+// Prüfen ob Wort Umlaute hat
+function hasUmlaut(word) {
+    return /[äöü]/i.test(word);
+}
+
+// Array mischen
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+// Grammatikregel finden
 function findGrammarRule(word) {
     const singular = word.singular.toLowerCase();
     const plural = word.plural.toLowerCase();
@@ -325,8 +352,371 @@ function findGrammarRule(word) {
     return null;
 }
 
-// Rest des Codes bleibt identisch zum vorherigen...
-// (Event Listener, Audio, Spiel-Logik usw. - nur die Wortliste und Regeln wurden angepasst)
+// Audio abspielen
+function playSound(audioName, useFallback = false) {
+    return new Promise((resolve) => {
+        let audio;
+        
+        if (useFallback) {
+            switch(audioName) {
+                case 'correct': audio = audioElements.fallbackCorrect; break;
+                case 'error': audio = audioElements.fallbackError; break;
+                case 'win': audio = audioElements.fallbackWin; break;
+                default: audio = audioElements.fallbackCorrect;
+            }
+        } else {
+            audio = audioElements[audioName];
+        }
+        
+        if (!audio) {
+            console.warn(`Audio ${audioName} nicht gefunden`);
+            resolve();
+            return;
+        }
+        
+        audio.currentTime = 0;
+        audio.play().then(resolve).catch(error => {
+            console.warn(`Audio-Fehler für ${audioName}:`, error.message);
+            if (!useFallback) {
+                playSound(audioName, true).then(resolve);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+// In Game-Log schreiben
+function logToGame(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}\n`;
+    elements.gameLog.textContent = logEntry + elements.gameLog.textContent;
+    
+    // Alte Logs begrenzen
+    const logs = elements.gameLog.textContent.split('\n');
+    if (logs.length > 10) {
+        elements.gameLog.textContent = logs.slice(0, 10).join('\n');
+    }
+}
+
+// ==================== SPIEL-LOGIK ====================
+
+// Event Listener einrichten
+function setupEventListeners() {
+    elements.startBtn.addEventListener('click', startGame);
+    elements.hintBtn.addEventListener('click', showHint);
+    elements.skipBtn.addEventListener('click', skipWord);
+    elements.restartBtn.addEventListener('click', restartGame);
+    elements.closeBtn.addEventListener('click', closeModal);
+    
+    console.log('Event-Listener eingerichtet');
+}
+
+// Spiel starten
+function startGame() {
+    console.log('Starte Umlaut-Meister...');
+    
+    GameState.gameActive = true;
+    GameState.score = 0;
+    GameState.streak = 0;
+    GameState.bestStreak = 0;
+    GameState.correctAnswers = 0;
+    GameState.wrongAnswers = 0;
+    GameState.skippedAnswers = 0;
+    GameState.totalAnswers = 0;
+    GameState.usedWords.clear();
+    GameState.learnedRules.clear();
+    
+    updateDisplays();
+    
+    elements.startBtn.disabled = true;
+    elements.hintBtn.disabled = false;
+    elements.skipBtn.disabled = false;
+    
+    elements.feedbackMessage.textContent = 'Wähle die richtige Mehrzahlform!';
+    elements.feedbackDetails.textContent = 'Achte auf Umlaute und Endungen!';
+    
+    getNextWord();
+    logToGame('Spiel gestartet - Mehrzahlbildung trainieren');
+}
+
+// Zufälliges Wort auswählen
+function getRandomWord() {
+    // Filtere bereits verwendete Wörter
+    const availableWords = WORD_LIST.filter(word => !GameState.usedWords.has(word.singular));
+    
+    if (availableWords.length === 0) {
+        // Wenn alle Wörter verwendet wurden, zurücksetzen
+        GameState.usedWords.clear();
+        return WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+    }
+    
+    const randomIndex = Math.floor(Math.random() * availableWords.length);
+    const word = availableWords[randomIndex];
+    GameState.usedWords.add(word.singular);
+    
+    return word;
+}
+
+// Nächstes Wort anzeigen
+function getNextWord() {
+    if (GameState.correctAnswers >= GameState.neededCorrect) {
+        endGame(true);
+        return;
+    }
+    
+    GameState.currentWord = getRandomWord();
+    elements.wordSingular.textContent = GameState.currentWord.singular;
+    
+    // Antwort-Buttons erstellen
+    createAnswerButtons();
+    
+    // Animation
+    elements.wordSingular.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        elements.wordSingular.style.transform = 'scale(1)';
+    }, 200);
+}
+
+// Antwort-Buttons erstellen
+function createAnswerButtons() {
+    elements.answerButtons.innerHTML = '';
+    
+    // Alle möglichen Antworten sammeln
+    const answers = [
+        GameState.currentWord.plural,
+        GameState.currentWord.wrong1,
+        GameState.currentWord.wrong2
+    ];
+    
+    // Antworten mischen
+    const shuffledAnswers = shuffleArray([...answers]);
+    
+    // Buttons erstellen
+    shuffledAnswers.forEach((answer, index) => {
+        const button = document.createElement('button');
+        button.className = 'answer-btn';
+        button.textContent = answer;
+        button.dataset.answer = answer;
+        
+        button.addEventListener('click', () => {
+            if (!GameState.gameActive) return;
+            GameState.totalAnswers++;
+            checkAnswer(answer);
+        });
+        
+        elements.answerButtons.appendChild(button);
+    });
+}
+
+// Antwort prüfen
+function checkAnswer(selectedAnswer) {
+    if (!GameState.gameActive) return;
+    
+    const isCorrect = selectedAnswer === GameState.currentWord.plural;
+    
+    // Alle Buttons deaktivieren
+    document.querySelectorAll('.answer-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.answer === GameState.currentWord.plural) {
+            btn.classList.add('correct');
+        } else if (btn.dataset.answer === selectedAnswer && !isCorrect) {
+            btn.classList.add('wrong');
+        }
+    });
+    
+    if (isCorrect) {
+        handleCorrectAnswer();
+    } else {
+        handleWrongAnswer();
+    }
+    
+    updateDisplays();
+}
+
+// Richtige Antwort
+function handleCorrectAnswer() {
+    GameState.score += 10;
+    GameState.streak++;
+    if (GameState.streak > GameState.bestStreak) {
+        GameState.bestStreak = GameState.streak;
+    }
+    GameState.correctAnswers++;
+    
+    playSound('correct');
+    
+    // Regel lernen
+    const rule = findGrammarRule(GameState.currentWord);
+    if (rule) {
+        GameState.learnedRules.add(rule);
+    }
+    
+    elements.feedbackMessage.innerHTML = '<span style="color: #00b09b; font-weight: bold;">✓ Richtig!</span>';
+    elements.feedbackDetails.textContent = `${GameState.currentWord.singular} → ${GameState.currentWord.plural}`;
+    
+    // Bonus bei 5er-Serie
+    if (GameState.streak % 5 === 0) {
+        GameState.score += 20;
+        playSound('levelup').catch(() => playSound('correct'));
+        
+        logToGame(`🎯 ${GameState.streak}er Serie! +20 Bonuspunkte`);
+    }
+    
+    logToGame(`✓ ${GameState.currentWord.singular} → ${GameState.currentWord.plural}`);
+    
+    // Nächstes Wort nach kurzer Pause
+    setTimeout(getNextWord, 2000);
+}
+
+// Falsche Antwort
+function handleWrongAnswer() {
+    GameState.wrongAnswers++;
+    GameState.streak = 0;
+    
+    playSound('error');
+    
+    elements.feedbackMessage.innerHTML = '<span style="color: #ff416c; font-weight: bold;">✗ Falsch!</span>';
+    elements.feedbackDetails.textContent = `Richtig ist: ${GameState.currentWord.singular} → ${GameState.currentWord.plural}`;
+    
+    // Regel lernen
+    const rule = findGrammarRule(GameState.currentWord);
+    if (rule) {
+        GameState.learnedRules.add(rule);
+    }
+    
+    logToGame(`✗ ${GameState.currentWord.singular} → ${GameState.currentWord.plural}`);
+    
+    // Nächstes Wort nach kurzer Pause
+    setTimeout(getNextWord, 2000);
+}
+
+// Tipp anzeigen
+function showHint() {
+    if (!GameState.gameActive) return;
+    
+    elements.hintBtn.disabled = true;
+    GameState.score = Math.max(0, GameState.score - 2);
+    
+    const rule = findGrammarRule(GameState.currentWord);
+    if (rule) {
+        elements.feedbackMessage.innerHTML = '<span style="color: #f6d365; font-weight: bold;">💡 Regeltipp:</span>';
+        elements.feedbackDetails.textContent = rule + ' (2 Punkte abgezogen)';
+        GameState.learnedRules.add(rule);
+    } else {
+        elements.feedbackMessage.innerHTML = '<span style="color: #f6d365; font-weight: bold;">💡 Tipp:</span>';
+        elements.feedbackDetails.textContent = `Die richtige Antwort hat ${GameState.currentWord.plural.length} Buchstaben (2 Punkte abgezogen)`;
+    }
+    
+    updateDisplays();
+    
+    // Reaktiviere Button nach 3 Sekunden
+    setTimeout(() => {
+        elements.hintBtn.disabled = false;
+    }, 3000);
+}
+
+// Wort überspringen
+function skipWord() {
+    if (!GameState.gameActive) return;
+    
+    GameState.skippedAnswers++;
+    GameState.score = Math.max(0, GameState.score - 5);
+    GameState.streak = 0;
+    
+    elements.feedbackMessage.innerHTML = '<span style="color: #868f96; font-weight: bold;">⏭️ Übersprungen</span>';
+    elements.feedbackDetails.textContent = `${GameState.currentWord.singular} → ${GameState.currentWord.plural} (5 Punkte abgezogen)`;
+    
+    updateDisplays();
+    
+    logToGame(`⏭️ ${GameState.currentWord.singular} übersprungen`);
+    
+    // Nächstes Wort
+    setTimeout(getNextWord, 1500);
+}
+
+// Displays aktualisieren
+function updateDisplays() {
+    elements.score.textContent = GameState.score;
+    elements.streakCounter.textContent = GameState.streak;
+    elements.correctCounter.textContent = `${GameState.correctAnswers}/${GameState.neededCorrect}`;
+    
+    const progressPercent = (GameState.correctAnswers / GameState.neededCorrect) * 100;
+    elements.progressFill.style.width = `${progressPercent}%`;
+    elements.progressText.textContent = `${GameState.correctAnswers}/${GameState.neededCorrect} Wörter richtig`;
+}
+
+// Spiel beenden
+function endGame(isWin) {
+    GameState.gameActive = false;
+    elements.hintBtn.disabled = true;
+    elements.skipBtn.disabled = true;
+    
+    document.querySelectorAll('.answer-btn').forEach(btn => btn.disabled = true);
+    
+    if (isWin) {
+        playSound('levelup').catch(() => playSound('win', true));
+    }
+    
+    showEndScreen(isWin);
+    logToGame(`Spiel ${isWin ? 'erfolgreich beendet' : 'abgebrochen'}!`);
+}
+
+// Endscreen anzeigen
+function showEndScreen(isWin) {
+    // Statistik berechnen
+    const totalAttempted = GameState.totalAnswers;
+    const accuracy = totalAttempted > 0 ? 
+        Math.round((GameState.correctAnswers / totalAttempted) * 100) : 0;
+    
+    // Werte setzen
+    elements.finalScore.textContent = GameState.score;
+    elements.finalCorrect.textContent = `${GameState.correctAnswers}/${GameState.neededCorrect}`;
+    elements.finalWrong.textContent = GameState.wrongAnswers;
+    elements.finalSkipped.textContent = GameState.skippedAnswers;
+    elements.finalStreak.textContent = GameState.bestStreak;
+    elements.finalAccuracy.textContent = `${accuracy}%`;
+    
+    // Gelernte Regeln anzeigen
+    if (GameState.learnedRules.size > 0) {
+        const rulesList = Array.from(GameState.learnedRules).map(rule => `• ${rule}`).join('<br>');
+        elements.learnedRules.innerHTML = rulesList;
+    } else {
+        elements.learnedRules.innerHTML = 'Heute keine neuen Regeln gelernt.';
+    }
+    
+    // Modal anpassen
+    if (isWin) {
+        elements.modalIcon.className = 'fas fa-award';
+        elements.modalTitle.textContent = 'Herzlichen Glückwunsch!';
+        elements.modalIcon.style.background = 'linear-gradient(135deg, #4a00e0, #8e2de2)';
+        elements.modalIcon.style.webkitBackgroundClip = 'text';
+        elements.modalIcon.style.webkitTextFillColor = 'transparent';
+    } else {
+        elements.modalIcon.className = 'fas fa-trophy';
+        elements.modalTitle.textContent = 'Spiel beendet';
+        elements.modalIcon.style.color = '#868f96';
+    }
+    
+    elements.endModal.style.display = 'flex';
+}
+
+// Spiel neustarten
+function restartGame() {
+    elements.endModal.style.display = 'none';
+    elements.startBtn.disabled = false;
+    elements.feedbackMessage.textContent = 'Klicke auf "Spiel starten" um zu beginnen!';
+    elements.feedbackDetails.textContent = 'Trainiere die Mehrzahlbildung mit Umlauten!';
+    elements.wordSingular.textContent = 'Umlaut-Meister';
+    elements.answerButtons.innerHTML = '';
+    updateDisplays();
+}
+
+// Modal schließen
+function closeModal() {
+    elements.endModal.style.display = 'none';
+}
+
+// ==================== INITIALISIERUNG ====================
 
 // Spiel initialisieren
 function initializeGame() {
@@ -342,9 +732,6 @@ function initializeGame() {
     
     console.log('Spiel erfolgreich initialisiert');
 }
-
-// Der Rest des Codes (Event Listener, Spiel-Logik usw.) bleibt genau gleich wie im vorherigen Skript!
-// Nur die Wortliste und die findGrammarRule-Funktion wurden angepasst.
 
 // Spiel starten wenn DOM geladen ist
 if (document.readyState === 'loading') {
