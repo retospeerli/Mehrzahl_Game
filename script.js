@@ -46,10 +46,10 @@ const WORD_LIST = [
     
     // Eu-Wörter
     { singular: "Scheune", plural: "Scheunen", wrong1: "Schäunen", wrong2: "Scheune" },
-    { singular: "Freude", plural: "Freuden", wrong1: "Fröiden", wrong2: "Froiden" },
-    { singular: "Feuer", plural: "Feuer", wrong1: "Fäuer", wrong2: "Feuers" },
-    { singular: "Leute", plural: "Leute", wrong1: "Läute", wrong2: "Leuten" },
-    { singular: "Heu", plural: "Heu", wrong1: "Häu", wrong2: "Heue" },
+    { singular: "Freude", plural: "Freuden", wrong1: "Fräuden", wrong2: "Froiden" },
+    { singular: "Feuer", plural: "Feuer", wrong1: "Fäuer", wrong2: "Foier" },
+    { singular: "Freund", plural: "Freunde", wrong1: "Fräunde", wrong2: "Froinde" },
+    { singular: "Abenteuer", plural: "Abenteuer", wrong1: "Abentäuer", wrong2: "Abentoier" },
     
     // Sonderfälle
     { singular: "Museum", plural: "Museen", wrong1: "Museümer", wrong2: "Museums" },
@@ -66,7 +66,6 @@ const WORD_LIST = [
     { singular: "Karte", plural: "Karten", wrong1: "Kärten", wrong2: "Kartens" },
     
     // Wasser-Sonderfall
-    { singular: "Wasser", plural: "Wasser", wrong1: "Wässer", wrong2: "Wassers" },
     { singular: "Fenster", plural: "Fenster", wrong1: "Fenster", wrong2: "Fenstern" },
     { singular: "Bett", plural: "Betten", wrong1: "Bätten", wrong2: "Bett" },
     { singular: "Brett", plural: "Bretter", wrong1: "Brätter", wrong2: "Brettär" },
